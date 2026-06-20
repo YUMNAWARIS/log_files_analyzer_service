@@ -47,6 +47,8 @@ log_files_analyzer_service/
 │   │       └── ThreadPoolExecutor.java      # Custom fixed-size thread pool
 │   │   └── logCounter/
 │   │       └── LogCounter.java              # Task implementation: counts log lines by type
+│   │   └── benchmark/
+│   │       └── LogBenchmark.java            # Thread-count vs. execution-time experiment
 │   │
 │   └── test/java/
 │       ├── queue/
@@ -56,6 +58,10 @@ log_files_analyzer_service/
 │       └── logCounter/
 │           ├── LogFileGenerator.java        # Deterministic test-data generator
 │           └── LogCounterTests.java         # End-to-end parallel analyzer test
+│
+├── docs/
+│   ├── LogBenchmarkExperiment.md            # Benchmark methodology, full results, analysis
+│   └── LogBenchmarkResults.pdf              # Execution-time-vs-threads bar chart
 │
 ├── .classpath / .project                    # Eclipse project metadata
 └── README.md
@@ -181,6 +187,33 @@ independent tasks distributed across the worker pool.
 | `ThreadPoolExecutor` | `executor/ThreadPoolExecutor.java` | Fixed-size custom thread pool: `dispatch()`, `collect()`, `shutdown()`. |
 | `LogCounter` | `logCounter/LogCounter.java` | `Task` that counts lines of a given `LogType` (`INFO`/`WARN`/`ERROR`) in one file. |
 | `LogFileGenerator` | `test/java/logCounter/LogFileGenerator.java` | Test utility: generates seeded, reproducible log files with an exact known entry distribution. |
+| `LogBenchmark` | `benchmark/LogBenchmark.java` | Measures average execution time of the parallel log analysis across 1–16 worker threads. |
+
+---
+
+## Performance benchmark: does the thread pool actually scale?
+
+It's easy to write multithreaded-*looking* code that never actually runs in
+parallel (e.g. an accidental global lock around the "parallel" part). To
+prove the custom `ThreadPoolExecutor` + `CustomBlockingQueue` genuinely
+scale, [`LogBenchmark`](src/main/java/benchmark/LogBenchmark.java) analyzes
+**100 generated log files (40,000,000 total log lines)** with worker counts
+swept from **1 to 16 threads**, averaging 5 runs per thread count.
+
+| Threads | Avg. time (ms) | Speedup vs. 1 thread |
+|---:|---:|---:|
+| 1  | 1585.4 | 1.00x |
+| 2  | 907.0  | 1.75x |
+| 4  | 497.2  | 3.19x |
+| 8  | 375.6  | 4.22x |
+| 12 | 347.4  | 4.56x |
+| 16 | 330.4  | 4.80x |
+
+Execution time drops ~5x going from 1 to 16 threads, with the steepest
+gains between 1–4 threads and a clear saturation curve after ~8 threads —
+the textbook shape of **Amdahl's Law** in action. Full results (all 16
+data points) and chart: **[LogBenchmarkExperiment.md](docs/LogBenchmarkExperiment.md)** ·
+**[LogBenchmarkResults.pdf](docs/LogBenchmarkResults.pdf)**
 
 ---
 
