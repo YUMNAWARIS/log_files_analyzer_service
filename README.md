@@ -213,7 +213,7 @@ Execution time drops ~5x going from 1 to 16 threads, with the steepest
 gains between 1–4 threads and a clear saturation curve after ~8 threads —
 the textbook shape of **Amdahl's Law** in action. Full results (all 16
 data points) and chart: **[LogBenchmarkExperiment.md](docs/LogBenchmarkExperiment.md)** ·
-**[LogBenchmarkResults.pdf](docs/LogBenchmarkResults.pdf)**
+**[LogBenchmarkResults.pdf](docs/EvaluationGraph.pdf)**
 
 ---
 
